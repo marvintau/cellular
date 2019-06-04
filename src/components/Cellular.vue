@@ -1,13 +1,18 @@
 <template>
     <div id="cellular">
-        <table>
-            <TableGrid :grid="head" :callback="handle"/>
-            <TableGrid :grid="body" :callback="handle"/>
-            <TableGrid :grid="addRowButton" :callback="handle"/>
+        <ActionControl :head="head" :actions="actions" />
+        <table>            
+            <TableGrid :grid="headComputed" :callback="handle"/>
+            <TableGrid :grid="bodyTable" :callback="handle"/>
+            <TableGrid v-if="canModifyDimension" :grid="addRowButton" :callback="handle"/>
         </table>
     <ol>
         <li>
-            实现排序、筛选、汇总<br>
+            实现排序、筛选、单层汇总、级联汇总<br>
+
+            可以应用级联汇总的，也可以应用单层汇总，反之不亦然。
+            当应用级联汇总时，应用级联汇总的列需要提供级联函数，其它列需要提供被动的求和函数
+
             这三者事实上存在某种关系。当我们引入汇总机制的时候，即允许数据结构存在层级关系，
             这时对于全部数据排序会破坏层级关系，因此我们只允许对同一层级的数据进行排序。
             
@@ -22,25 +27,41 @@
 
 <script>
 import TableGrid from './TableGrid.vue'
-import {genHead} from '../CellularModel.js'
+import ActionControl from './ActionControl.vue'
+import {genTable} from '../CellularModel.js'
+import {sort} from '../CellularModel.js'
 
 export default {
 
     name: 'Cellular',
     data(){
         return { 
-            addRowButton: [[{data:'添加行', attr:{type:"button", style:"extra", handler:"addRow"}}]],
-            addColButton: {data:'添加列', attr:{type:"button", style:"extra", handler:"addCol"}}
+            actions: []
         }
     },
     props: {
         body: Array,
+        head: Array,
+        canModifyDimension: Boolean,
     },
     computed: {
-        head: function(){
-            let headDefault = genHead(this.body[0].length);
-            headDefault[0].push(this.addColButton);
+        headComputed: function(){
+            let headDefault = this.head;
             return headDefault;
+        },
+        bodyTable: function(){
+            let bodyCopy = this.body.slice().map(e => Object.assign({}, e));
+            
+            for (let action of this.actions){
+                switch(action.action){
+                    case 'sort':
+                        let key = action.column;
+                        bodyCopy.sort((a, b) => a[key] < b[key] ? -1 : a[key] > b[key] ? 1 : 0);
+                        break;
+                }
+            }
+
+            return genTable(bodyCopy);
         }
     },
     methods: {
@@ -59,10 +80,12 @@ export default {
             for (let row of this.body){
                 row.push(Object.assign({}, row.last()))
             }
-        }
+        },
     },
+
     components: {
-        TableGrid
+        TableGrid,
+        ActionControl
     }
 }
 </script>

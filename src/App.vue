@@ -1,18 +1,22 @@
 <template>
     <div id="app">
-        <Cellular v-bind:head="head" v-bind:body="body" />
+        <Cellular :canModifyDimension="false" :head="head" :body="body" />
     </div>
 </template>
 
 <script>
 import Cellular from './components/Cellular.vue'
 
-import {genTable} from './CellularModel.js'
+import {createRandomJournal} from './randomBook.js'
+import {genTable, genHead} from './CellularModel.js'
+
+let journal = createRandomJournal();
 
 export default {
   data(){
     return {
-      body: genTable(5, 10)
+      body: journal,
+      head: genHead(journal[0])
     }
   },
   created: () => {
